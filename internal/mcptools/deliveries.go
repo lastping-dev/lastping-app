@@ -27,9 +27,10 @@ func registerDeliveryTools(s *server.MCPServer) {
 	s.AddTool(
 		newTool("list_deliveries",
 			mcp.WithDescription("Lists recent alert deliveries across the project's monitors: whether an alert fired, failed or was suppressed, "+
-				"and to which destination. Each row is one (incident event, destination) outcome: pending (attempt in flight), delivered, "+
-				"dead (per-channel attempt ceiling reached) or suppressed (the destination's rate cap dropped it). "+
-				"Covers 30 days and returns only the newest page; the dashboard's delivery log has the archive. "+
+				"and to which destination. Each row is one (event, destination) outcome: pending (in flight), delivered, "+
+				"dead (attempt ceiling reached) or suppressed (not sent: the destination's rate cap, "+
+				"or a blocked run answered within the hold; last_error says which). "+
+				"Covers 30 days, newest page only. "+
 				untrustedDescSentence),
 			mcp.WithString("monitor", mcp.Description("Restrict to one monitor's deliveries (UUID).")),
 			mcp.WithString("status", mcp.Description("Restrict to one delivery status: pending, delivered, dead, or suppressed.")),

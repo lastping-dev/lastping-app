@@ -146,11 +146,11 @@ func registerChannelTools(s *server.MCPServer) {
 			mcp.WithString("name", mcp.Description("New human-readable label. Omitted: unchanged.")),
 			mcp.WithObject("config", mcp.Description(
 				"Replacement config for the destination's existing kind ("+strings.Join(destinationKinds, ", ")+
-					"), naming only that kind's fields, each once: {\"url\":…,\"secret\":…} for webhook, "+
-					"{\"bot_token\":…,\"chat_id\":…} for telegram, {\"webhook_url\":…} for slack/discord/msteams/googlechat, {\"topic_url\":…} for ntfy, "+
-					"{\"token\":…,\"user_key\":…} for pushover, {\"address\":…} for email. Omitted: unchanged. "+
-					"A supplied URL is re-checked against the kind's allowed hosts and has to be https; a destination created before that rule "+
-					"keeps working until its config is replaced. The host rule does not prove who owns the endpoint.")),
+					"), naming only that kind's fields, each once: {url,secret} webhook, {bot_token,chat_id} telegram, "+
+					"{webhook_url} slack/discord/msteams/googlechat, {topic_url,token} ntfy, {token,user_key} pushover, {address} email. Omitted: unchanged. "+
+					"A secret left out is kept only while the webhook url / ntfy topic_url is unchanged (else 400: resend it); \"\" clears the ntfy token; other fields left out are removed. "+
+					"A supplied URL has to be https on the kind's allowed hosts (older destinations keep working until replaced). "+
+					"The host rule does not prove who owns the endpoint.")),
 		),
 		func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			c, err := clientFromContext(ctx)

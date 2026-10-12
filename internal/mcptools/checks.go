@@ -281,17 +281,17 @@ const (
 	// CI binding descriptions. ci_provider is create-only (immutable on PATCH),
 	// so only ci_workflow/ci_branch are shared with update_monitor.
 	ciProviderDesc = "Binds the monitor to a CI system ('github', 'gitlab' or 'jenkins'), whose webhook then reports every run with no ping code in the job. " +
-		"Fixed at creation: update_monitor cannot change or remove it. " +
+		"Fixed at creation: update_monitor cannot change or remove it, and create_monitor on an existing slug without a binding cannot add one (400 FIELD_NOT_IN_SHAPE). " +
 		"The webhook secret and URL appear only in this call's result; no tool or API read returns the secret again. " +
 		"Not accepted on monitor_type='http' (400 FIELD_NOT_IN_SHAPE). ci_workflow and ci_branch narrow which runs count."
 
 	ciWorkflowDesc = "CI filter: only runs of the workflow, pipeline or job with this exact name count. " +
 		"Needs ci_provider: without a CI binding it is refused with 400 FIELD_NOT_IN_SHAPE (monitor_type='ci' alone binds nothing). " +
-		"Exception: create_monitor on an existing slug (an upsert) never writes it, and with ci_provider in the same call it is accepted and discarded; " +
-		"update_monitor persists it. Unset, every workflow in the repository reports to the monitor, so an unrelated workflow's failure opens an incident and its success clears one."
+		"create_monitor on an existing CI-bound slug (an upsert) sets it when sent, ci_provider not needed; omitted or empty keeps the stored value, and clearing it is update_monitor's job. " +
+		"Unset, every workflow in the repository reports to the monitor, so an unrelated workflow's failure opens an incident and its success clears one."
 
 	ciBranchDesc = "CI filter: only runs on this branch count, e.g. 'main'. Needs ci_provider (400 FIELD_NOT_IN_SHAPE without a CI binding). " +
-		"Same upsert exception as ci_workflow: create_monitor on an existing slug never writes it; update_monitor does. " +
+		"On an upsert of an existing CI-bound slug it is set when sent; omitted or empty keeps the stored value (clear it with update_monitor). " +
 		"Unset, a run on any branch, a fork's pull request included, reports to the monitor."
 
 	// HTTP probe descriptions, shared between create_monitor and update_monitor.
