@@ -3,7 +3,7 @@
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset=".github/hero-dark.svg">
       <source media="(prefers-color-scheme: light)" srcset=".github/hero-light.svg">
-      <img alt="LastPing. A stopped agent looks exactly like a thinking one. Monitoring for AI agent runs, cron jobs and CI/CD. Free for individuals." src=".github/hero-light.svg" width="100%">
+      <img alt="LastPing. AI agent monitoring: alerts when your agents fail, stall or need you. Also cron jobs and CI/CD. Free for individuals." src=".github/hero-light.svg" width="100%">
     </picture>
   </a>
 </p>
@@ -23,13 +23,17 @@
   <a href="https://lastping.dev"><img alt="Free for individuals" src="https://img.shields.io/badge/free_for_individuals-0f766e"></a>
 </p>
 
+LastPing alerts you when your AI agents fail, stall, wait for your approval or
+never start, and watches the cron jobs and CI/CD pipelines around them. Free
+for individuals.
+
 Most monitoring watches a thing and tells you when it looks wrong. LastPing
 waits for a thing to check in and tells you when it doesn't. That inversion is
 the whole product: **a job that breaks can't send you an error, but it can fail
-to send you anything** — and absence is the one signal a broken process can
+to send you anything**, and absence is the one signal a broken process can
 still produce.
 
-This repository holds the open-source pieces: the `lastping` CLI, which wraps
+This repository holds the client pieces: the `lastping` CLI, which wraps
 any command and reports its start, exit code and traces, and the MCP server,
 which lets an AI agent set up and read its own monitoring. The hosted service
 they talk to is at **[lastping.dev](https://lastping.dev)**, free for

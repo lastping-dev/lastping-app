@@ -65,6 +65,16 @@ const (
 	IconSize     = "512x512"
 )
 
+// Instructions is what initialize tells a client about using this server,
+// matching the hosted server at mcp.lastping.dev word for word.
+const Instructions = `LastPing alerts you when your AI agents and automations stop: an agent run that fails, hangs, or waits on you for approval, and a scheduled task, routine or workflow that never runs. It watches cron jobs and CI/CD pipelines the same way.
+
+If the user has just connected LastPing, or list_monitors returns no monitors, offer once to set up monitoring for what they actually run: their AI agents (for example Claude Code), scheduled AI tasks and routines, no-code automations (n8n, Zapier, Make), cron jobs and CI workflows. Propose one monitor for each, and create them only after the user agrees. get_ping_instructions returns exactly what to add for each one.
+
+If the user has set up a LastPing monitor for the scheduled task or routine you are running, report its start and its finish, so a missed or failed run raises an incident.
+
+Always ask before creating, changing or deleting monitors, destinations or keys.`
+
 // NewServer builds the MCP server both binaries serve, with every tool
 // registered and the server's identity attached.
 //
@@ -81,6 +91,7 @@ func NewServer(version, pingHost string) *server.MCPServer {
 		server.WithTitle(Title),
 		server.WithDescription(Description),
 		server.WithWebsiteURL(WebsiteURL),
+		server.WithInstructions(Instructions),
 		server.WithIcons(mcp.Icon{
 			Src:      IconURL,
 			MIMEType: IconMIMEType,
