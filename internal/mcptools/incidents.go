@@ -47,7 +47,8 @@ func registerIncidentTools(s *server.MCPServer) {
 	s.AddTool(
 		newTool("get_incident",
 			mcp.WithDescription("Gets one incident and its ordered timeline: run_started, step, run_failed/cancelled/blocked, incident_opened, "+
-				"alert_delivered/failed/suppressed/pending (destination and attempts; down and fail alerts only), note, incident_resolved. "+
+				"alert_delivered/failed/suppressed/pending (destination, attempts; down, fail and all-clear recovery alerts), note, "+
+				"recovery ping, incident_resolved. "+
 				"For what the run was doing, who was paged and what was tried. run_* events are matched on the run id recorded at opening, "+
 				"so none means no run was recorded. Delivery error text is omitted. "+
 				untrustedDescSentence),

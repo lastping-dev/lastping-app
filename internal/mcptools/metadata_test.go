@@ -3,6 +3,7 @@ package mcptools
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -127,4 +128,29 @@ func TestMetadata_BothBinariesUseOneConstructor(t *testing.T) {
 		require.Equal(t, a[field], b[field],
 			"%s differs between two builds of the same server", field)
 	}
+}
+
+// TestMetadata_InitializeCarriesInstructions reads the instructions off a real
+// initialize response, so a constant that never reaches a client fails here.
+func TestMetadata_InitializeCarriesInstructions(t *testing.T) {
+	s := NewServer("1.0.0", "https://ping.example.test")
+	const req = `{"jsonrpc":"2.0","id":1,"method":"initialize","params":` +
+		`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`
+
+	raw, err := json.Marshal(s.HandleMessage(context.Background(), []byte(req)))
+	require.NoError(t, err)
+
+	var env struct {
+		Result struct {
+			Instructions string `json:"instructions"`
+		} `json:"result"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &env), "parse initialize response: %s", raw)
+
+	// Positive companion: an empty constant would make the equality pass vacuously.
+	require.Greater(t, len(Instructions), 200)
+	require.Equal(t, Instructions, env.Result.Instructions)
+	require.Contains(t, env.Result.Instructions, "Always ask before creating, changing or deleting monitors, destinations or keys.")
+	require.Contains(t, env.Result.Instructions, "get_ping_instructions returns exactly what to add for each one.")
+	require.Equal(t, 3, strings.Count(env.Result.Instructions, "\n\n"), "four paragraphs, as the hosted server sends them")
 }
