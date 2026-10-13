@@ -43,3 +43,13 @@ func TestTraceDiagnostics_NamesTheDroppedOutcome(t *testing.T) {
 	assert.Contains(t, desc, "outcome (accepted; refused: something to fix; dropped: routine, answered 202)")
 	assert.Contains(t, desc, "Dropped: unknown_event, unknown_metric, cumulative_temporality, invalid_point")
 }
+
+// TestGetIncident_NamesTheRecoveryPing: the incident timeline carries a
+// recovery_ping event, the success that closed the incident, under that exact
+// name. The description has to use the event's name, so an agent reading the
+// timeline can match what it was told to expect.
+func TestGetIncident_NamesTheRecoveryPing(t *testing.T) {
+	desc := toolDescription(t, "get_incident")
+	assert.Contains(t, desc, "recovery_ping (the success that closed it), incident_resolved")
+	assert.Contains(t, desc, "alert_delivered/failed/suppressed/pending (destination and attempts), note.")
+}
