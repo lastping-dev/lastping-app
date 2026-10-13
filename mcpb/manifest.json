@@ -3,8 +3,8 @@
   "name": "lastping",
   "display_name": "LastPing",
   "version": "0.0.0",
-  "description": "Dead-man's-switch monitoring for cron jobs, CI/CD and AI agents: create monitors, read incidents and wire up check-ins from Claude.",
-  "long_description": "Most monitoring watches a thing and tells you when it looks wrong. LastPing waits for a thing to check in and tells you when it doesn't. A job that breaks can't send you an error, but it can fail to send you anything, and absence is the one signal a broken process can still produce.\n\nThis extension runs the LastPing MCP server on your computer. It carries the tool set of the release it was built from, and calls the LastPing API with the key you enter at install. Claude Desktop keeps that key in your system keychain.",
+  "description": "LastPing alerts you when your AI agents fail, stall, wait for your approval or never start, and watches the cron jobs and CI/CD pipelines around them. Free for individuals.",
+  "long_description": "LastPing alerts you when your AI agents fail, stall, wait for your approval or never start, and watches the cron jobs and CI/CD pipelines around them. Free for individuals.\n\nFrom Claude you can set up monitoring for what you actually run: Claude Code and other agents, scheduled AI tasks, n8n, Zapier and Make automations, cron jobs and CI workflows. Claude creates the monitors, tells you exactly what to add for each one, and reads incidents back to you. Underneath it is a dead man's switch: each job checks in, and LastPing alerts you when a check-in stops arriving.\n\nThis extension runs the LastPing MCP server on your computer. It carries the tool set of the release it was built from, and calls the LastPing API with the key you enter at install. Claude Desktop keeps that key in your system keychain.",
   "author": {
     "name": "LastPing",
     "email": "hello@lastping.dev",
