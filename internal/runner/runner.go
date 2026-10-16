@@ -65,6 +65,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/lastping-dev/lastping-app/internal/redact"
 )
 
 // DefaultPingBase is the production ping host. Overridable via --ping-url /
@@ -551,8 +553,10 @@ func (r *reporter) post(suffix, body string) {
 	}
 	if lastErr != nil && r.warn != nil {
 		// A warning, never an error: the wrapped command's outcome is not ours to
-		// change because our monitoring call failed.
-		fmt.Fprintf(r.warn, "lastping: could not report to %s: %v\n", r.base, lastErr)
+		// change because our monitoring call failed. The request URL carries the
+		// monitor id, which is what lets anyone ping this monitor, so the
+		// warning names only the ping host and the error without its URL.
+		fmt.Fprintf(r.warn, "lastping: could not report to %s: %v\n", redact.Host(r.base), redact.Error(lastErr))
 	}
 }
 

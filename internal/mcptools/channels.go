@@ -228,11 +228,11 @@ func registerChannelTools(s *server.MCPServer) {
 func (c *APIClient) listChannels(ctx context.Context) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/channels", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -243,12 +243,12 @@ func (c *APIClient) listChannels(ctx context.Context) (*mcp.CallToolResult, erro
 	}
 
 	var channels []Channel
-	if err := json.NewDecoder(resp.Body).Decode(&channels); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &channels); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(channels) == 0 {
-		return mcp.NewToolResultText("No destinations found. Add one with create_destination."), nil
+		return mcp.NewToolResultText(EmptyDestinationsText), nil
 	}
 
 	out, _ := json.MarshalIndent(channels, "", "  ")
@@ -300,11 +300,11 @@ func (c *APIClient) createChannel(ctx context.Context, req mcp.CallToolRequest) 
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/channels", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -315,8 +315,8 @@ func (c *APIClient) createChannel(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	var ch Channel
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if ch.Kind == "email" && !ch.Verified {
@@ -349,11 +349,11 @@ func (c *APIClient) updateChannel(ctx context.Context, id string, req mcp.CallTo
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.BaseURL+"/api/v1/channels/"+id, bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -367,8 +367,8 @@ func (c *APIClient) updateChannel(ctx context.Context, id string, req mcp.CallTo
 	}
 
 	var ch Channel
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	out, _ := json.MarshalIndent(ch, "", "  ")
@@ -378,11 +378,11 @@ func (c *APIClient) updateChannel(ctx context.Context, id string, req mcp.CallTo
 func (c *APIClient) testChannel(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/channels/"+id+"/test", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -405,11 +405,11 @@ func (c *APIClient) testChannel(ctx context.Context, id string) (*mcp.CallToolRe
 func (c *APIClient) resendChannelVerification(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/channels/"+id+"/resend-verification", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -426,8 +426,8 @@ func (c *APIClient) resendChannelVerification(ctx context.Context, id string) (*
 		Resent   bool `json:"resent"`
 		Verified bool `json:"verified"`
 	}
-	if dErr := json.NewDecoder(resp.Body).Decode(&out); dErr != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", dErr)), nil
+	if dErr := decodeBody(resp, &out); dErr != nil {
+		return mcp.NewToolResultError(dErr.Error()), nil
 	}
 
 	if out.Verified && !out.Resent {
@@ -442,11 +442,11 @@ func (c *APIClient) resendChannelVerification(ctx context.Context, id string) (*
 func (c *APIClient) deleteChannel(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+"/api/v1/channels/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}

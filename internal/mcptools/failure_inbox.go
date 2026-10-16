@@ -147,11 +147,11 @@ func (c *APIClient) listOpenIncidents(ctx context.Context, agentID string, limit
 	url := fmt.Sprintf("%s/api/v1/agents/%s/open-incidents?limit=%d", c.BaseURL, agentID, limit)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -169,8 +169,8 @@ func (c *APIClient) listOpenIncidents(ctx context.Context, agentID string, limit
 	}
 
 	var incidents []json.RawMessage
-	if err := json.NewDecoder(resp.Body).Decode(&incidents); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &incidents); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(incidents) == 0 {
@@ -220,11 +220,11 @@ func (c *APIClient) addIncidentNote(ctx context.Context, incidentID int, body st
 	url := fmt.Sprintf("%s/api/v1/incidents/%d/notes", c.BaseURL, incidentID)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -263,8 +263,8 @@ func (c *APIClient) addIncidentNote(ctx context.Context, incidentID int, body st
 		Body       string `json:"body"`
 		CreatedAt  string `json:"created_at"`
 	}
-	if dErr := json.NewDecoder(resp.Body).Decode(&note); dErr != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", dErr)), nil
+	if dErr := decodeBody(resp, &note); dErr != nil {
+		return mcp.NewToolResultError(dErr.Error()), nil
 	}
 
 	out, mErr := json.MarshalIndent(note, "", "  ")

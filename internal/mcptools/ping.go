@@ -175,11 +175,11 @@ func (c *APIClient) getPingInstructions(ctx context.Context, id, tool, pingHost 
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -193,8 +193,8 @@ func (c *APIClient) getPingInstructions(ctx context.Context, id, tool, pingHost 
 	}
 
 	var pi PingInstructions
-	if err := json.NewDecoder(resp.Body).Decode(&pi); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &pi); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	// Defensive only: the API always populates ping_url, so this should never

@@ -475,6 +475,36 @@ func TestRun_PingFailureDoesNotAffectChild(t *testing.T) {
 			t.Errorf("stdout = %q, want the child's output intact", stdout.String())
 		}
 	})
+
+	// The ping URL carries the monitor id, which is all anyone needs to ping
+	// the monitor, so the warning names the host and the cause and nothing
+	// of the URL's path or query.
+	t.Run("warning carries no ping URL", func(t *testing.T) {
+		var stderr bytes.Buffer
+		_, err := Run(Options{
+			MonitorID: testMonitor,
+			PingBase:  "http://127.0.0.1:1/SECRETPATH",
+			Argv:      []string{"sh", "-c", "exit 0"},
+			Stdout:    io.Discard,
+			Stderr:    &stderr,
+			NewRID:    func() string { return "deadbeef" },
+		})
+		if err != nil {
+			t.Fatalf("an unreachable endpoint must not surface as an error: %v", err)
+		}
+		got := stderr.String()
+		if !strings.Contains(got, "lastping: could not report to http://127.0.0.1:1: ") {
+			t.Errorf("warning should name the ping host; stderr = %q", got)
+		}
+		if !strings.Contains(got, "connection refused") {
+			t.Errorf("warning lost the cause; stderr = %q", got)
+		}
+		for _, leak := range []string{testMonitor, "SECRETPATH", "rid=", "Post "} {
+			if strings.Contains(got, leak) {
+				t.Errorf("warning carries %q; stderr = %q", leak, got)
+			}
+		}
+	})
 }
 
 // ── Configuration ─────────────────────────────────────────────────────────

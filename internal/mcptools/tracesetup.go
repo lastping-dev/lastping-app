@@ -125,11 +125,11 @@ func (c *APIClient) getTraceSetup(ctx context.Context, id, tool string) (*mcp.Ca
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -143,8 +143,8 @@ func (c *APIClient) getTraceSetup(ctx context.Context, id, tool string) (*mcp.Ca
 	}
 
 	var ts TraceSetup
-	if err := json.NewDecoder(resp.Body).Decode(&ts); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ts); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	return mcp.NewToolResultText(marshalNoEscape(ts)), nil
 }

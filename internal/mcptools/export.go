@@ -10,7 +10,6 @@ package mcptools
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -65,11 +64,11 @@ func (c *APIClient) exportTerraform(ctx context.Context, tag, monitorSlug, inclu
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -79,9 +78,9 @@ func (c *APIClient) exportTerraform(ctx context.Context, tag, monitorSlug, inclu
 		return mcp.NewToolResultError(c.problem(resp).Error()), nil
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := readBody(resp, 0)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to read response: %v", err)), nil
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	return mcp.NewToolResultText(string(body)), nil

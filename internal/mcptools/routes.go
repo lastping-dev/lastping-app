@@ -100,10 +100,10 @@ func (c *APIClient) deleteRoute(ctx context.Context, monitorID, eventType string
 	target := fmt.Sprintf("%s/api/v1/checks/%s/routes/%s", c.BaseURL, url.PathEscape(monitorID), url.PathEscape(eventType))
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, target, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -138,11 +138,11 @@ func (c *APIClient) deleteRoute(ctx context.Context, monitorID, eventType string
 func (c *APIClient) getRoutes(ctx context.Context, id string) ([]Route, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/checks/"+id+"/routes", nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build request: %w", err)
+		return nil, buildFailed(err)
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("API request failed: %w", err)
 	}
@@ -153,8 +153,8 @@ func (c *APIClient) getRoutes(ctx context.Context, id string) ([]Route, error) {
 	}
 
 	var routes []Route
-	if dErr := json.NewDecoder(resp.Body).Decode(&routes); dErr != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", dErr)
+	if dErr := decodeBody(resp, &routes); dErr != nil {
+		return nil, dErr
 	}
 	return routes, nil
 }
@@ -177,11 +177,11 @@ func (c *APIClient) setRoute(ctx context.Context, monitorID, eventType string, c
 	url := fmt.Sprintf("%s/api/v1/checks/%s/routes/%s", c.BaseURL, monitorID, eventType)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -195,8 +195,8 @@ func (c *APIClient) setRoute(ctx context.Context, monitorID, eventType string, c
 	}
 
 	var route Route
-	if err := json.NewDecoder(resp.Body).Decode(&route); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &route); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(route.ChannelIDs) == 0 {

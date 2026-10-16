@@ -82,7 +82,11 @@ func (c *APIClient) problemDetail(resp *http.Response) (problemInfo, error) {
 		RequiredScope string `json:"required_scope"`
 		Fix           string `json:"fix"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
+	raw, err := readBody(resp, 0)
+	if err != nil {
+		return problemInfo{}, err
+	}
+	if err := json.Unmarshal(raw, &p); err != nil {
 		return problemInfo{}, undecodableProblem(resp.StatusCode)
 	}
 	info := problemInfo{Detail: p.Detail, MaxExpiresAt: p.MaxExpiresAt, MaxScope: p.MaxScope, RequiredScope: p.RequiredScope}

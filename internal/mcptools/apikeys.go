@@ -100,7 +100,8 @@ func registerAPIKeyTools(s *server.MCPServer) {
 			mcp.WithDescription("Lists the project's API keys without plaintext values. Each has its non-secret prefix, scope (read, write or admin), "+
 				"created_by_key_id (the key that minted it, absent for a dashboard key; revoking a key revokes every key below it), "+
 				"last_used_at and last_used_surface (mcp, terraform or api; both absent when never used). "+
-				"last_used_surface comes from the caller-controlled User-Agent header: a hint, not proof of identity."),
+				"last_used_surface comes from the caller-controlled User-Agent header: a hint, not proof of identity. "+
+				"A read or write API key gets 403 here; an admin API key works."),
 		),
 		func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			c, err := clientFromContext(ctx)
@@ -172,10 +173,10 @@ func (c *APIClient) regenerateAPIKey(ctx context.Context, id string) (*mcp.CallT
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.BaseURL+"/api/v1/api-keys/"+url.PathEscape(id)+"/regenerate", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -194,8 +195,8 @@ func (c *APIClient) regenerateAPIKey(ctx context.Context, id string) (*mcp.CallT
 		createdKey
 		OldKeyRevoked *bool `json:"old_key_revoked"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &created); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	bound := ""
 	if created.CheckID != "" {
@@ -329,8 +330,8 @@ func (c *APIClient) mintKey(ctx context.Context, path string, payload map[string
 	defer resp.Body.Close()
 
 	var created createdKey
-	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
-		return nil, mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err))
+	if err := decodeBody(resp, &created); err != nil {
+		return nil, mcp.NewToolResultError(err.Error())
 	}
 	return &created, nil
 }
@@ -358,12 +359,12 @@ func (c *APIClient) postKey(ctx context.Context, path string, payload map[string
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+path, bytes.NewReader(data))
 	if err != nil {
-		return nil, mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err))
+		return nil, mcp.NewToolResultError(buildFailed(err).Error())
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return nil, mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err))
 	}
@@ -373,11 +374,11 @@ func (c *APIClient) postKey(ctx context.Context, path string, payload map[string
 func (c *APIClient) listAPIKeys(ctx context.Context) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/api-keys", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -388,8 +389,8 @@ func (c *APIClient) listAPIKeys(ctx context.Context) (*mcp.CallToolResult, error
 	}
 
 	var keys []APIKey
-	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &keys); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(keys) == 0 {
@@ -403,11 +404,11 @@ func (c *APIClient) listAPIKeys(ctx context.Context) (*mcp.CallToolResult, error
 func (c *APIClient) revokeAPIKey(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+"/api/v1/api-keys/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}

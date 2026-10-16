@@ -90,11 +90,11 @@ func parseAssertionsArg(raw string) (as []MonitorAssertion, present bool, err er
 func (c *APIClient) getAssertions(ctx context.Context, id string) ([]MonitorAssertion, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/checks/"+id+"/assertions", nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build request: %w", err)
+		return nil, buildFailed(err)
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("API request failed: %w", err)
 	}
@@ -105,8 +105,8 @@ func (c *APIClient) getAssertions(ctx context.Context, id string) ([]MonitorAsse
 	}
 
 	var env assertionsEnvelope
-	if dErr := json.NewDecoder(resp.Body).Decode(&env); dErr != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", dErr)
+	if dErr := decodeBody(resp, &env); dErr != nil {
+		return nil, dErr
 	}
 	return env.Assertions, nil
 }
@@ -124,11 +124,11 @@ func (c *APIClient) putAssertions(ctx context.Context, id string, as []MonitorAs
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, c.BaseURL+"/api/v1/checks/"+id+"/assertions", bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("failed to build request: %w", err)
+		return nil, buildFailed(err)
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("API request failed: %w", err)
 	}
@@ -139,8 +139,8 @@ func (c *APIClient) putAssertions(ctx context.Context, id string, as []MonitorAs
 	}
 
 	var env assertionsEnvelope
-	if dErr := json.NewDecoder(resp.Body).Decode(&env); dErr != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", dErr)
+	if dErr := decodeBody(resp, &env); dErr != nil {
+		return nil, dErr
 	}
 	return env.Assertions, nil
 }

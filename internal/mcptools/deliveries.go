@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -71,11 +70,11 @@ func (c *APIClient) listDeliveries(ctx context.Context, monitor, status string, 
 	reqURL := fmt.Sprintf("%s/api/v1/deliveries?%s", c.BaseURL, q.Encode())
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -89,15 +88,15 @@ func (c *APIClient) listDeliveries(ctx context.Context, monitor, status string, 
 	// unmangled (a field the API adds later reaches the agent without a
 	// change here), and once into a typed probe purely to decide the
 	// empty-result message below.
-	body, err := io.ReadAll(resp.Body)
+	body, err := readBody(resp, 0)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to read response: %v", err)), nil
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	var probe struct {
 		Deliveries []json.RawMessage `json:"deliveries"`
 	}
-	if err := json.Unmarshal(body, &probe); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := unmarshalBody(body, &probe); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(probe.Deliveries) == 0 {
