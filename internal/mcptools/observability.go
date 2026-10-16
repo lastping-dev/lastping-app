@@ -270,10 +270,10 @@ func (c *APIClient) proxyRead(ctx context.Context, path string, query url.Values
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -285,8 +285,8 @@ func (c *APIClient) proxyRead(ctx context.Context, path string, query url.Values
 		return mcp.NewToolResultError(c.problem(resp).Error()), nil
 	}
 	var body json.RawMessage
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &body); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	return untrustedResult(body, fields...)
 }
@@ -305,10 +305,10 @@ func (c *APIClient) adoptDiscoveredAgent(ctx context.Context, id, agentID string
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.BaseURL+"/api/v1/agents/discovered/"+url.PathEscape(id)+"/adopt", reqBody)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -317,8 +317,8 @@ func (c *APIClient) adoptDiscoveredAgent(ctx context.Context, id, agentID string
 		return mcp.NewToolResultError(c.problem(resp).Error()), nil
 	}
 	var body json.RawMessage
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &body); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	// The adopted agent's name and slug are the source's service.name when
 	// the adopt created it; its dependencies and usage are exporter text on

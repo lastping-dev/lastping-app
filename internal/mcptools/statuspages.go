@@ -138,11 +138,11 @@ func registerStatusPageTools(s *server.MCPServer) {
 func (c *APIClient) listStatusPages(ctx context.Context) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/status-pages", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -153,8 +153,8 @@ func (c *APIClient) listStatusPages(ctx context.Context) (*mcp.CallToolResult, e
 	}
 
 	var pages []StatusPage
-	if err := json.NewDecoder(resp.Body).Decode(&pages); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &pages); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(pages) == 0 {
@@ -188,11 +188,11 @@ func (c *APIClient) createStatusPage(ctx context.Context, req mcp.CallToolReques
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/status-pages", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -203,8 +203,8 @@ func (c *APIClient) createStatusPage(ctx context.Context, req mcp.CallToolReques
 	}
 
 	var sp StatusPage
-	if err := json.NewDecoder(resp.Body).Decode(&sp); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &sp); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	return mcp.NewToolResultText(statusPageSummary("Status page created", sp)), nil
 }
@@ -262,11 +262,11 @@ func (c *APIClient) updateStatusPage(ctx context.Context, id string, req mcp.Cal
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.BaseURL+"/api/v1/status-pages/"+id, bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -280,8 +280,8 @@ func (c *APIClient) updateStatusPage(ctx context.Context, id string, req mcp.Cal
 	}
 
 	var sp StatusPage
-	if err := json.NewDecoder(resp.Body).Decode(&sp); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &sp); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	return mcp.NewToolResultText(statusPageSummary("Status page updated", sp)), nil
 }
@@ -294,11 +294,11 @@ func (c *APIClient) getStatusPage(ctx context.Context, id string) (StatusPage, e
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/status-pages/"+id, nil)
 	if err != nil {
-		return sp, fmt.Errorf("failed to build request: %w", err)
+		return sp, buildFailed(err)
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return sp, fmt.Errorf("API request failed: %w", err)
 	}
@@ -310,8 +310,8 @@ func (c *APIClient) getStatusPage(ctx context.Context, id string) (StatusPage, e
 	if resp.StatusCode != http.StatusOK {
 		return sp, c.problem(resp)
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&sp); err != nil {
-		return sp, fmt.Errorf("failed to decode response: %w", err)
+	if err := decodeBody(resp, &sp); err != nil {
+		return sp, err
 	}
 	return sp, nil
 }
@@ -319,11 +319,11 @@ func (c *APIClient) getStatusPage(ctx context.Context, id string) (StatusPage, e
 func (c *APIClient) deleteStatusPage(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+"/api/v1/status-pages/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}

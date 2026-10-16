@@ -166,11 +166,11 @@ func (c *APIClient) getRun(ctx context.Context, id, rid string) (*mcp.CallToolRe
 	target := fmt.Sprintf("%s/api/v1/checks/%s/runs/%s", c.BaseURL, url.PathEscape(id), url.PathEscape(rid))
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -185,8 +185,8 @@ func (c *APIClient) getRun(ctx context.Context, id, rid string) (*mcp.CallToolRe
 	}
 
 	var detail json.RawMessage
-	if err := json.NewDecoder(resp.Body).Decode(&detail); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &detail); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	// title, output_excerpt, rid, events.body, events.label, steps.name and

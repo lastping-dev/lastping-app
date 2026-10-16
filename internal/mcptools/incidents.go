@@ -107,11 +107,11 @@ func (c *APIClient) getRunHistory(ctx context.Context, id string, limit int) (*m
 	url := fmt.Sprintf("%s/api/v1/checks/%s/runs?limit=%d", c.BaseURL, id, limit)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -125,8 +125,8 @@ func (c *APIClient) getRunHistory(ctx context.Context, id string, limit int) (*m
 	}
 
 	var runs []json.RawMessage
-	if err := json.NewDecoder(resp.Body).Decode(&runs); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &runs); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(runs) == 0 {
@@ -157,11 +157,11 @@ func (c *APIClient) listIncidents(ctx context.Context, id string, limit int) (*m
 	url := fmt.Sprintf("%s/api/v1/checks/%s/incidents?limit=%d", c.BaseURL, id, limit)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -175,8 +175,8 @@ func (c *APIClient) listIncidents(ctx context.Context, id string, limit int) (*m
 	}
 
 	var incidents []Incident
-	if err := json.NewDecoder(resp.Body).Decode(&incidents); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &incidents); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(incidents) == 0 {
@@ -196,10 +196,10 @@ func (c *APIClient) getIncident(ctx context.Context, id int64) (*mcp.CallToolRes
 	url := fmt.Sprintf("%s/api/v1/incidents/%d", c.BaseURL, id)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -211,8 +211,8 @@ func (c *APIClient) getIncident(ctx context.Context, id int64) (*mcp.CallToolRes
 		return mcp.NewToolResultError(c.problem(resp).Error()), nil
 	}
 	var inc json.RawMessage
-	if err := json.NewDecoder(resp.Body).Decode(&inc); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &inc); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	return untrustedResult(inc, "detail", "run_id", "events.rid", "events.title", "events.name",
 		"events.body_excerpt", "events.detail", "events.body")

@@ -106,11 +106,11 @@ func registerTemplateTools(s *server.MCPServer) {
 func (c *APIClient) getAlertTemplatesTool(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/checks/"+id+"/templates", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -126,8 +126,8 @@ func (c *APIClient) getAlertTemplatesTool(ctx context.Context, id string) (*mcp.
 	var payload struct {
 		Templates map[string]string `json:"templates"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &payload); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(payload.Templates) == 0 {
@@ -181,11 +181,11 @@ func (c *APIClient) setAlertTemplateTool(ctx context.Context, id, eventType, cau
 func (c *APIClient) fetchTemplates(ctx context.Context, id string) (map[string]string, *mcp.CallToolResult) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/checks/"+id+"/templates", nil)
 	if err != nil {
-		return nil, mcp.NewToolResultError(fmt.Sprintf("failed to build GET request: %v", err))
+		return nil, mcp.NewToolResultError(buildFailed(err).Error())
 	}
 	c.auth(req)
 
-	resp, err := c.HTTP.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err))
 	}
@@ -202,8 +202,8 @@ func (c *APIClient) fetchTemplates(ctx context.Context, id string) (map[string]s
 	var payload struct {
 		Templates map[string]string `json:"templates"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, mcp.NewToolResultError(fmt.Sprintf("failed to decode templates response: %v", err))
+	if err := decodeBody(resp, &payload); err != nil {
+		return nil, mcp.NewToolResultError(err.Error())
 	}
 	if payload.Templates == nil {
 		payload.Templates = map[string]string{}
@@ -218,11 +218,11 @@ func (c *APIClient) putTemplates(ctx context.Context, id string, templates map[s
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.BaseURL+"/api/v1/checks/"+id+"/templates",
 		bytes.NewReader(body))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build PUT request: %v", err))
+		return mcp.NewToolResultError(buildFailed(err).Error())
 	}
 	c.auth(req)
 
-	resp, err := c.HTTP.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err))
 	}

@@ -87,6 +87,7 @@ func NewServer(version, pingHost string) *server.MCPServer {
 		ServerName,
 		version,
 		server.WithToolCapabilities(true),
+		server.WithPromptCapabilities(false),
 		server.WithTitle(Title),
 		server.WithDescription(Description),
 		server.WithWebsiteURL(WebsiteURL),

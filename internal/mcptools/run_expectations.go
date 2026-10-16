@@ -106,11 +106,11 @@ func (c *APIClient) declareRunExpectations(ctx context.Context, checkID, rid, ra
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.BaseURL+"/api/v1/checks/"+url.PathEscape(checkID)+"/runs/"+url.PathEscape(rid)+"/expectations", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -133,8 +133,8 @@ func (c *APIClient) declareRunExpectations(ctx context.Context, checkID, rid, ra
 	var env struct {
 		Assertions []runExpectationDeclaration `json:"assertions"`
 	}
-	if dErr := json.NewDecoder(resp.Body).Decode(&env); dErr != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", dErr)), nil
+	if dErr := decodeBody(resp, &env); dErr != nil {
+		return mcp.NewToolResultError(dErr.Error()), nil
 	}
 
 	out, mErr := json.MarshalIndent(env, "", "  ")

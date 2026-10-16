@@ -40,7 +40,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -103,9 +102,9 @@ const discoverReconcileSourcesDesc = "The full scan as a JSON array string, e.g.
 // Falls back to the status line when the body is not a problem document, so a
 // proxy's HTML error page cannot be mistaken for an empty rejection.
 func reconcileProblemText(resp *http.Response) string {
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxReconcileResponseBytes))
+	raw, err := readBody(resp, maxReconcileResponseBytes)
 	if err != nil {
-		return fmt.Sprintf("HTTP %d (response body could not be read: %v)", resp.StatusCode, err)
+		return err.Error()
 	}
 	var p struct {
 		Title  string `json:"title"`
@@ -206,11 +205,11 @@ func (c *APIClient) discoverMonitorsReconcile(ctx context.Context, rawSources st
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.BaseURL+"/api/v1/discovery/reconcile", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -225,9 +224,9 @@ func (c *APIClient) discoverMonitorsReconcile(ctx context.Context, rawSources st
 		return mcp.NewToolResultError(reconcileProblemText(resp)), nil
 	}
 
-	body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxReconcileResponseBytes))
+	body, readErr := readBody(resp, maxReconcileResponseBytes)
 	if readErr != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to read response: %v", readErr)), nil
+		return mcp.NewToolResultError(readErr.Error()), nil
 	}
 
 	// Counted for the summary line only. The BODY forwarded to the agent is
@@ -240,8 +239,8 @@ func (c *APIClient) discoverMonitorsReconcile(ctx context.Context, rawSources st
 		Existing []json.RawMessage `json:"existing"`
 		Orphaned []json.RawMessage `json:"orphaned"`
 	}
-	if uErr := json.Unmarshal(body, &counts); uErr != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", uErr)), nil
+	if uErr := unmarshalBody(body, &counts); uErr != nil {
+		return mcp.NewToolResultError(uErr.Error()), nil
 	}
 
 	body = stripCIIgnored(body)

@@ -796,11 +796,11 @@ func (c *APIClient) createMonitor(ctx context.Context, req mcp.CallToolRequest) 
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/checks", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -811,8 +811,8 @@ func (c *APIClient) createMonitor(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	var ch Check
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	note := "created"
@@ -847,11 +847,11 @@ func (c *APIClient) listMonitors(ctx context.Context, req mcp.CallToolRequest) (
 	}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -862,12 +862,12 @@ func (c *APIClient) listMonitors(ctx context.Context, req mcp.CallToolRequest) (
 	}
 
 	var checks []Check
-	if err := json.NewDecoder(resp.Body).Decode(&checks); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &checks); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(checks) == 0 {
-		return mcp.NewToolResultText("No monitors found. Create one with create_monitor."), nil
+		return mcp.NewToolResultText(EmptyMonitorsText), nil
 	}
 
 	for i := range checks {
@@ -880,11 +880,11 @@ func (c *APIClient) listMonitors(ctx context.Context, req mcp.CallToolRequest) (
 func (c *APIClient) getMonitor(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/checks/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -898,8 +898,8 @@ func (c *APIClient) getMonitor(ctx context.Context, id string) (*mcp.CallToolRes
 	}
 
 	var ch Check
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	// Assertions are a sub-resource, so reading them costs a second call. It is
@@ -1129,11 +1129,11 @@ func (c *APIClient) updateMonitor(ctx context.Context, id string, req mcp.CallTo
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.BaseURL+"/api/v1/checks/"+id, bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -1147,8 +1147,8 @@ func (c *APIClient) updateMonitor(ctx context.Context, id string, req mcp.CallTo
 	}
 
 	var ch Check
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	// The PATCH landed. If the caller also asked for assertions, replace the set
@@ -1185,11 +1185,11 @@ func (c *APIClient) updateMonitor(ctx context.Context, id string, req mcp.CallTo
 func (c *APIClient) deleteMonitor(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+"/api/v1/checks/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -1208,11 +1208,11 @@ func (c *APIClient) deleteMonitor(ctx context.Context, id string) (*mcp.CallTool
 func (c *APIClient) simpleCheckPost(ctx context.Context, id, action string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/checks/"+id+"/"+action, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -1226,8 +1226,8 @@ func (c *APIClient) simpleCheckPost(ctx context.Context, id, action string) (*mc
 	}
 
 	var ch Check
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Monitor %sd. paused=%v, status=%s", action, ch.Paused, ch.Status)), nil
 }
@@ -1265,11 +1265,11 @@ func (c *APIClient) snoozeMonitor(ctx context.Context, id string, req mcp.CallTo
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/checks/"+id+"/snooze", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -1289,8 +1289,8 @@ func (c *APIClient) snoozeMonitor(ctx context.Context, id string, req mcp.CallTo
 		Status           string  `json:"status"`
 		MaintenanceUntil *string `json:"maintenance_until"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ch); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	if body["clear"] == true {
 		return mcp.NewToolResultText(fmt.Sprintf("Maintenance window cleared on monitor %s (status=%s).", id, ch.Status)), nil

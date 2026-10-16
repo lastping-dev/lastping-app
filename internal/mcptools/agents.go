@@ -190,11 +190,11 @@ func (c *APIClient) registerAgent(ctx context.Context, name, description string)
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/v1/agents", bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -205,8 +205,8 @@ func (c *APIClient) registerAgent(ctx context.Context, name, description string)
 	}
 
 	var ag Agent
-	if err := json.NewDecoder(resp.Body).Decode(&ag); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ag); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	reg := AgentRegistration{
@@ -232,11 +232,11 @@ func (c *APIClient) registerAgent(ctx context.Context, name, description string)
 func (c *APIClient) listAgents(ctx context.Context) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/agents", nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -247,12 +247,12 @@ func (c *APIClient) listAgents(ctx context.Context) (*mcp.CallToolResult, error)
 	}
 
 	var agents []Agent
-	if err := json.NewDecoder(resp.Body).Decode(&agents); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &agents); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	if len(agents) == 0 {
-		return mcp.NewToolResultText("No agents found. Create one with register_agent."), nil
+		return mcp.NewToolResultText(EmptyAgentsText), nil
 	}
 
 	return untrustedResult(agents, agentUntrustedFields...)
@@ -261,11 +261,11 @@ func (c *APIClient) listAgents(ctx context.Context) (*mcp.CallToolResult, error)
 func (c *APIClient) getAgent(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/v1/agents/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -279,8 +279,8 @@ func (c *APIClient) getAgent(ctx context.Context, id string) (*mcp.CallToolResul
 	}
 
 	var ag Agent
-	if err := json.NewDecoder(resp.Body).Decode(&ag); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ag); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	return untrustedResult(ag, agentUntrustedFields...)
@@ -313,11 +313,11 @@ func (c *APIClient) updateAgent(ctx context.Context, id string, req mcp.CallTool
 	data, _ := json.Marshal(body)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.BaseURL+"/api/v1/agents/"+id, bytes.NewReader(data))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
@@ -331,8 +331,8 @@ func (c *APIClient) updateAgent(ctx context.Context, id string, req mcp.CallTool
 	}
 
 	var ag Agent
-	if err := json.NewDecoder(resp.Body).Decode(&ag); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to decode response: %v", err)), nil
+	if err := decodeBody(resp, &ag); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 	// update_agent confirms a rename; it is not a read, so the two trace
 	// facts stay out (get_agent carries them). What it does return goes in
@@ -346,11 +346,11 @@ func (c *APIClient) updateAgent(ctx context.Context, id string, req mcp.CallTool
 func (c *APIClient) deleteAgent(ctx context.Context, id string) (*mcp.CallToolResult, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+"/api/v1/agents/"+id, nil)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to build request: %v", err)), nil
+		return mcp.NewToolResultError(buildFailed(err).Error()), nil
 	}
 	c.auth(httpReq)
 
-	resp, err := c.HTTP.Do(httpReq)
+	resp, err := c.do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("API request failed: %v", err)), nil
 	}
