@@ -25,25 +25,43 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+// PingInstructionsMaxResultChars is the result size get_ping_instructions
+// declares to Claude Code in its tools/list entry, as
+// _meta["anthropic/maxResultSizeChars"]. Without it Claude Code saves a text
+// result longer than 50,000 characters to a file and shows the agent only a
+// pointer to it, and the agent then reads the install piecemeal with grep.
+// With it, the result stays inline up to this size
+// (code.claude.com/docs/en/mcp, "Raise the limit for a specific tool"; the
+// hard ceiling is 500,000). The claude-code hook install is the result's
+// largest part. Clients other than Claude Code ignore the key. Matches the
+// hosted server at mcp.lastping.dev.
+const PingInstructionsMaxResultChars = 100_000
+
+// maxResultSizeMeta is the _meta key Claude Code reads a tool's own result
+// limit from.
+const maxResultSizeMeta = "anthropic/maxResultSizeChars"
+
 // registerPingTools registers get_ping_instructions — the flagship tool that
 // turns a monitor into ready-to-run check-in snippets, so a job or AI agent can
 // instrument its own dead-man's-switch in a single conversation.
 func registerPingTools(s *server.MCPServer, pingHost string) {
+	tool := newTool("get_ping_instructions",
+		mcp.WithDescription("Returns what a monitor needs in order to report: its ping URLs, copy-paste snippets (curl_success, curl_start, curl_fail, curl_step, run_example) "+
+			"and three reporting mechanisms, for wiring up a new monitor. `reporting_options` holds the rule for choosing between them: "+
+			"`how_to` is the manual protocol and works in any agent with no prerequisite (with expect_every_s, a lapse opens an incident); "+
+			"`hook_install` is a one-time install that automates the same protocol through hooks and alone sends every state, blocked and note included; "+
+			"it is returned only when `tool` is set (claude-code, codex or antigravity), otherwise `hook_install_note` says so; `run_wrapper` puts `lastping run` before a launched command (cron job, CI step, script) "+
+			"and reports start, success, fail and cancel. Also returned: `failure_inbox_how_to`, `expectations_how_to` (declare_run_expectations), "+
+			"`tracing_how_to` (OpenTelemetry, detailed by get_trace_setup), `otel_env_lines`, export lines whose key placeholder stands for the person's tracing key, and `docs_url`. "+
+			"An exporter that cannot set headers can POST to `<ping_url>/v1/traces`, which needs no Authorization header."),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Monitor UUID (from create_monitor or list_monitors).")),
+		mcp.WithString("tool",
+			mcp.Enum("claude-code", "codex", "antigravity"),
+			mcp.Description("Which tool's install `hook_install` carries: claude-code, codex or antigravity. `hook_install` is returned only when this is set. Everything else in the result is the same.")),
+	)
+	tool.Meta = mcp.NewMetaFromMap(map[string]any{maxResultSizeMeta: PingInstructionsMaxResultChars})
 	s.AddTool(
-		newTool("get_ping_instructions",
-			mcp.WithDescription("Returns what a monitor needs in order to report: its ping URLs, copy-paste snippets (curl_success, curl_start, curl_fail, curl_step, run_example) "+
-				"and three reporting mechanisms, for wiring up a new monitor. `reporting_options` holds the rule for choosing between them: "+
-				"`how_to` is the manual protocol and works in any agent with no prerequisite (with expect_every_s, a lapse opens an incident); "+
-				"`hook_install` is a one-time install that automates the same protocol through hooks and alone sends every state, blocked and note included; "+
-				"it is returned only when `tool` is set (claude-code, codex or antigravity), otherwise `hook_install_note` says so; `run_wrapper` puts `lastping run` before a launched command (cron job, CI step, script) "+
-				"and reports start, success, fail and cancel. Also returned: `failure_inbox_how_to`, `expectations_how_to` (declare_run_expectations), "+
-				"`tracing_how_to` (OpenTelemetry, detailed by get_trace_setup), `otel_env_lines`, export lines whose key placeholder stands for the person's tracing key, and `docs_url`. "+
-				"An exporter that cannot set headers can POST to `<ping_url>/v1/traces`, which needs no Authorization header."),
-			mcp.WithString("id", mcp.Required(), mcp.Description("Monitor UUID (from create_monitor or list_monitors).")),
-			mcp.WithString("tool",
-				mcp.Enum("claude-code", "codex", "antigravity"),
-				mcp.Description("Which tool's install `hook_install` carries: claude-code, codex or antigravity. `hook_install` is returned only when this is set. Everything else in the result is the same.")),
-		),
+		tool,
 		func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			c, err := clientFromContext(ctx)
 			if err != nil {

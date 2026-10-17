@@ -125,7 +125,7 @@ func registerObservabilityTools(s *server.MCPServer) {
 				"tokens_out, tokens_cache_read, tokens_cache_write, cost_usd (decimal text) and cost_source: client (the tool reported its cost), "+
 				"estimated (LastPing priced tokens at API list prices), mixed (a traced day holds both) or empty (unknown). "+
 				"origin is traces or metrics; a day and model can have one of each, never summed. With id, one agent's usage; without, the project's, "+
-				"traces only, plus by_agent (costliest first). Both carry by_project: per project (a Claude Code session's folder) its runs, tokens and cost "+
+				"traces only, plus by_agent (costliest first). Both carry by_project: per project (the folder that holds a Claude Code session's git repository, else its own folder) its runs, tokens and cost "+
 				"from traced runs only (project_scope traces_only). by_project sums each run's traced totals, while one agent's days prefer a Claude Code metrics export's "+
 				"reported cost, so the two need not match. With project, days become one row per UTC day with model and provider empty; project narrows days and by_project, not by_agent. "+
 				envelopeSentence),
