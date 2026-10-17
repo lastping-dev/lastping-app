@@ -24,6 +24,8 @@ type headerStub struct {
 	calls  []string
 	paths  []string
 	events []string
+	// clients holds each request's mcpusage ClientHeader.
+	clients []string
 }
 
 func newHeaderStub(t *testing.T, body string) (*headerStub, *mcptools.APIClient) {
@@ -35,6 +37,7 @@ func newHeaderStub(t *testing.T, body string) (*headerStub, *mcptools.APIClient)
 		h.calls = append(h.calls, r.Header.Get(mcpusage.CallHeader))
 		h.paths = append(h.paths, r.URL.Path)
 		h.events = append(h.events, r.Header.Get(mcpusage.EventHeader))
+		h.clients = append(h.clients, r.Header.Get(mcpusage.ClientHeader))
 		h.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(body))
