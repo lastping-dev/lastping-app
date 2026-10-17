@@ -89,7 +89,8 @@ func registerPrompts(s *server.MCPServer) {
 			mcp.WithArgument("what",
 				mcp.ArgumentDescription("Optional. What to monitor, for example 'my nightly Claude Code routine' or 'the backup cron job'.")),
 		),
-		func(_ context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		func(ctx context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+			notePromptFetch(ctx, SetUpMonitoringPrompt)
 			return mcp.NewGetPromptResult(
 				"Set up LastPing monitoring",
 				[]mcp.PromptMessage{

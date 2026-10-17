@@ -67,7 +67,13 @@ func isTimeout(err error) bool {
 // request URL (redact.Error drops it; the path and query are not logged
 // either) and returned as errAPITimeout or errAPIUnreachable, never as its
 // own text.
+//
+// It is also the one place a request is labelled with the tool call it was
+// made for (usage.go), and the one place a response's X-LastPing-Monitors
+// signal is read into that call (nudge.go): every REST request a tool sends
+// passes through here.
 func (c *APIClient) do(req *http.Request) (*http.Response, error) {
+	labelToolCall(req)
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		log.Printf("mcptools: %s request to the LastPing API failed: %v", req.Method, redact.Error(err))
@@ -76,6 +82,7 @@ func (c *APIClient) do(req *http.Request) (*http.Response, error) {
 		}
 		return nil, errAPIUnreachable
 	}
+	readMonitorsSignal(req, resp)
 	return resp, nil
 }
 
