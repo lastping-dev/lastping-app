@@ -7,8 +7,9 @@
 // per tool call) on every REST request it sends while running a tool, so the
 // API can count which tools connected assistants call. The header is a
 // LABEL, never a credential: the request is authenticated and scoped exactly
-// as it would be without it. Only the tool's name, a random per-call id and
-// the setup-offer event travel: never an argument or a result.
+// as it would be without it. Only the tool's name, a random per-call id, the
+// client category (client.go) and the setup-offer event travel: never an
+// argument, a result or the client's self-reported name.
 package mcpusage
 
 const (

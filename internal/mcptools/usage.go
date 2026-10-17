@@ -15,9 +15,10 @@ import (
 
 // usage.go labels each REST request with the MCP tool call that made it, so
 // the API can count which tools connected assistants actually call. Only the
-// tool's NAME, a random per-call id and, for an empty list, the fact that the
-// setup offer was served travel: never an argument, a result or anything else
-// the agent sent. It matches the hosted server at mcp.lastping.dev.
+// tool's NAME, a random per-call id, the category of the assistant (never its
+// self-reported name) and, for an empty list, the fact that the setup offer
+// was served travel: never an argument, a result or anything else the agent
+// sent. It matches the hosted server at mcp.lastping.dev.
 
 type toolCallKey struct{}
 
@@ -50,6 +51,23 @@ func labelToolCall(req *http.Request) {
 	}
 	req.Header.Set(mcpusage.ToolHeader, tc.label)
 	req.Header.Set(mcpusage.CallHeader, tc.id)
+	if category := clientCategory(req.Context()); category != "" {
+		req.Header.Set(mcpusage.ClientHeader, category)
+	}
+}
+
+// clientCategory returns the mcpusage ClientHeader category of the MCP client
+// whose session ctx belongs to, or an empty string when the client is unknown
+// or the session never sent initialize. The stdio transport has one session
+// per process, so the category holds for the whole process. A stateless HTTP
+// request carries no initialize and so no category. Only the category leaves
+// this function: the clientInfo name is never logged or sent.
+func clientCategory(ctx context.Context) string {
+	session, ok := server.ClientSessionFromContext(ctx).(server.SessionWithClientInfo)
+	if !ok {
+		return ""
+	}
+	return mcpusage.ClientFromName(session.GetClientInfo().Name)
 }
 
 // toolCallMiddleware labels the context of every tool call with the tool's
