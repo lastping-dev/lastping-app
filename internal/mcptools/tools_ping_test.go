@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -436,4 +437,33 @@ func TestGetPingInstructions_OmitsDiscoveryHowTo(t *testing.T) {
 func TestGetPingInstructions_CarriesDocsURL(t *testing.T) {
 	got, _ := pingInstructionsFor(t, map[string]interface{}{"id": "abc-123"})
 	assert.Equal(t, "https://lastping.dev/mcp/", got["docs_url"])
+}
+
+// TestGetPingInstructions_DeclaresItsResultSizeToClaudeCode: the tools/list
+// entry of get_ping_instructions carries
+// _meta["anthropic/maxResultSizeChars"], the key Claude Code reads a tool's own
+// inline limit from (code.claude.com/docs/en/mcp, "Raise the limit for a
+// specific tool"), at PingInstructionsMaxResultChars. Positive companion: no
+// other tool declares one, so the key is not on every tool by accident.
+func TestGetPingInstructions_DeclaresItsResultSizeToClaudeCode(t *testing.T) {
+	require.Greater(t, mcptools.PingInstructionsMaxResultChars, 50_000, "the declared limit must exceed Claude Code's default, or it buys nothing")
+	require.LessOrEqual(t, mcptools.PingInstructionsMaxResultChars, 500_000, "Claude Code's hard ceiling")
+	s := server.NewMCPServer("lastping-test", "test")
+	mcptools.Register(s, "https://ping.example.test")
+	seen := false
+	for name, st := range s.ListTools() {
+		wire, err := json.Marshal(st.Tool)
+		require.NoError(t, err)
+		var entry struct {
+			Meta map[string]any `json:"_meta"`
+		}
+		require.NoError(t, json.Unmarshal(wire, &entry))
+		if name != "get_ping_instructions" {
+			require.NotContains(t, entry.Meta, "anthropic/maxResultSizeChars", "%s declares no result size", name)
+			continue
+		}
+		seen = true
+		require.EqualValues(t, mcptools.PingInstructionsMaxResultChars, entry.Meta["anthropic/maxResultSizeChars"], string(wire))
+	}
+	require.True(t, seen, "get_ping_instructions is registered")
 }

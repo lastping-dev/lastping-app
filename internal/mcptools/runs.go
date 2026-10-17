@@ -90,7 +90,7 @@ func registerListRunsTool(s *server.MCPServer) {
 			mcp.WithString("outcome", mcp.Enum(runOutcomes...), mcp.Description("Only runs with this outcome.")),
 			mcp.WithString("since", mcp.Description("RFC 3339 start of the window, e.g. 2026-09-01T00:00:00Z. Default 7 days ago; at most 90 days back.")),
 			mcp.WithString("until", mcp.Description("RFC 3339 end of the window. Default now.")),
-			mcp.WithString("project", mcp.Description("Only runs whose Claude Code hook start carried this project label: the name of the folder the session worked in.")),
+			mcp.WithString("project", mcp.Description("Only runs whose Claude Code hook start carried this project label: the name of the folder that holds the git repository the session worked in, or the folder's name when it is not in a repository.")),
 			mcp.WithBoolean("traced", mcp.Description("true: only runs that hold spans. Omitted or false: every run.")),
 			mcp.WithString("agent", mcp.Description("Only runs of this agent (agent UUID or slug).")),
 			mcp.WithString("dependency", mcp.Description("Only runs that called this dependency, by its exact name as get_agent_dependencies "+
