@@ -47,9 +47,13 @@ func TestTraceDiagnostics_NamesTheDroppedOutcome(t *testing.T) {
 // TestGetIncident_NamesTheRecoveryPing: the incident timeline carries a
 // recovery_ping event, the success that closed the incident, under that exact
 // name. The description has to use the event's name, so an agent reading the
-// timeline can match what it was told to expect.
+// timeline can match what it was told to expect. It also says where the body
+// of a ping without a run id appears, so a missing run event is not read as
+// a missing body.
 func TestGetIncident_NamesTheRecoveryPing(t *testing.T) {
 	desc := toolDescription(t, "get_incident")
-	assert.Contains(t, desc, "recovery_ping (the success that closed it), incident_resolved")
-	assert.Contains(t, desc, "alert_delivered/failed/suppressed/pending (destination and attempts), note.")
+	assert.Contains(t, desc, "recovery_ping, incident_resolved")
+	assert.Contains(t, desc, "alert_delivered/failed/suppressed/pending, note.")
+	assert.Contains(t, desc, "incident_opened carries body_excerpt and exit_code from the ping that opened it when no run event does")
+	assert.Contains(t, desc, "A missing field means not recorded.")
 }
