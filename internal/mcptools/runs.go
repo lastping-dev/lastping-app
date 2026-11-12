@@ -103,7 +103,8 @@ func registerListRunsTool(s *server.MCPServer) {
 				"string, e.g. \"0.25\".")),
 			mcp.WithString("trace_id", mcp.Description("Only the run a trace became: 8 to 32 hex digits of its trace id. Finds runs made "+
 				"from a trace with no run id, not runs that named their own.")),
-			mcp.WithString("q", mcp.Description("Only runs whose run id (rid) contains this text.")),
+			mcp.WithString("q", mcp.Description("Only runs whose run id (rid), monitor name or agent name contains this text. "+
+				"Names ignore case.")),
 			mcp.WithNumber("limit", mcp.Description("Runs per page (default 20, max 100).")),
 			mcp.WithString("cursor", mcp.Description("next_cursor from the previous page, verbatim.")),
 		),
